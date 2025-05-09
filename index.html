@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Resume Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff;
+        }
+        .upload-area {
+            border: 2px dashed #0ea5e9;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background-color: #e0f2fe;
+            border-color: #0284c7;
+        }
+        .resume-preview {
+            font-family: 'Inter', sans-serif;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+        .loader {
+            border-top-color: #3498db;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .editable:hover {
+            background-color: rgba(14, 165, 233, 0.05);
+            outline: 1px dashed #0ea5e9;
+            cursor: text;
+        }
+        .edit-mode {
+            background-color: rgba(14, 165, 233, 0.1);
+            outline: 2px solid #0ea5e9;
+        }
+        .template-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .template-card:hover {
+            transform: translateY(-5px);
+        }
+        .template-card.active {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
+        }
+        .photo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #0ea5e9;
+        }
+        .photo-upload-area {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen p-4 md:p-8">
+        <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6">
+            <h1 class="text-3xl font-bold text-center text-sky-600 mb-8">Smart Resume Builder</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Left Column: Upload Area -->
+                <div>
+                    <h2 class="text-xl font-semibold mb-4 text-sky-700">Upload Reference Resume</h2>
+                    <div class="upload-area p-8 rounded-lg text-center cursor-pointer" id="dropZone">
+                        <i class="bi bi-cloud-upload text-5xl text-sky-500"></i>
+                        <h3 class="text-xl font-semibold mt-4 mb-2">Upload Your Old Resume</h3>
+                        <p class="text-gray-600 mb-4">Drag and drop your resume or click to browse</p>
+                        <input type="file" id="fileInput" accept=".pdf,.doc,.docx" class="hidden">
+                        <button class="bg-sky-500 text-white px-6 py-2 rounded-lg hover:bg-sky-600 transition">
+                            Choose File
+                        </button>
+                    </div>
+                    <p id="fileName" class="mt-4 text-center text-gray-600"></p>
+                    
+                    <!-- Photo Upload -->
+                    <div class="mt-6">
+                        <h2 class="text-xl font-semibold mb-4 text-sky-700">Add Your Photo</h2>
+                        <div class="flex justify-center">
+                            <div class="photo-upload-area bg-sky-50 border-2 border-dashed border-sky-300" id="photoDropZone">
+                                <div id="photoPlaceholder">
+                                    <i class="bi bi-person text-4xl text-sky-500"></i>
+                                </div>
+                                <img id="photoPreview" class="photo-preview hidden" src="" alt="Profile Photo">
+                                <input type="file" id="photoInput" accept="image/*" class="hidden">
+                            </div>
+                        </div>
+                        <p class="mt-2 text-center text-sm text-gray-600">Click to upload your professional photo</p>
+                    </div>
+                    
+                    <!-- Template Selection -->
+                    <div class="mt-8">
+                        <h2 class="text-xl font-semibold mb-4 text-sky-700">Choose Template</h2>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="template-card p-2 rounded-lg cursor-pointer active" data-template="modern">
+                                <div class="bg-sky-100 p-3 rounded-lg flex flex-col items-center">
+                                    <i class="bi bi-file-earmark text-2xl text-sky-600"></i>
+                                    <p class="text-sm mt-1">Modern</p>
+                                </div>
+                            </div>
+                            <div class="template-card p-2 rounded-lg cursor-pointer" data-template="classic">
+                                <div class="bg-sky-50 p-3 rounded-lg flex flex-col items-center">
+                                    <i class="bi bi-file-earmark text-2xl text-sky-600"></i>
+                                    <p class="text-sm mt-1">Classic</p>
+                                </div>
+                            </div>
+                            <div class="template-card p-2 rounded-lg cursor-pointer" data-template="minimal">
+                                <div class="bg-sky-50 p-3 rounded-lg flex flex-col items-center">
+                                    <i class="bi bi-file-earmark text-2xl text-sky-600"></i>
+                                    <p class="text-sm mt-1">Minimal</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 text-center">
+                        <button id="generateBtn" class="bg-sky-600 text-white px-8 py-3 rounded-lg hover:bg-sky-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full">
+                            <i class="bi bi-magic mr-2"></i>Generate New Resume
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Preview -->
+                <div id="previewSection">
+                    <h2 class="text-xl font-semibold mb-4 text-sky-700">Your New Resume</h2>
+                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                        <div id="previewLoading" class="flex items-center justify-center py-10 hidden">
+                            <div class="loader rounded-full border-4 border-gray-200 h-12 w-12"></div>
+                            <span class="ml-3 text-gray-600">Optimizing your resume...</span>
+                        </div>
+                        <div id="previewContent" class="resume-preview min-h-[400px]">
+                            <div class="flex justify-center items-center h-full text-gray-500">
+                                <div class="text-center">
+                                    <i class="bi bi-file-earmark-text text-5xl mb-3"></i>
+                                    <p>Upload your resume and click Generate to see the preview</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-between">
+                            <button id="editBtn" class="bg-sky-600 text-white px-6 py-2 rounded-lg hover:bg-sky-700 transition hidden">
+                                <i class="bi bi-pencil mr-2"></i>Edit
+                            </button>
+                            <button id="saveBtn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition hidden">
+                                <i class="bi bi-check-lg mr-2"></i>Save Changes
+                            </button>
+                            <button id="downloadBtn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition hidden">
+                                <i class="bi bi-download mr-2"></i>Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="mt-12">
+                <h2 class="text-xl font-semibold mb-6 text-center text-sky-700">Why Choose Our Resume Builder?</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center p-4">
+                        <i class="bi bi-lightning-charge text-4xl text-sky-500"></i>
+                        <h3 class="text-lg font-semibold mt-3 mb-2">Instant Optimization</h3>
+                        <p class="text-gray-600">Transform your existing resume into a professional, ATS-friendly format in seconds</p>
+                    </div>
+                    <div class="text-center p-4">
+                        <i class="bi bi-palette text-4xl text-sky-500"></i>
+                        <h3 class="text-lg font-semibold mt-3 mb-2">Modern Templates</h3>
+                        <p class="text-gray-600">Choose from dozens of professionally designed templates for any industry</p>
+                    </div>
+                    <div class="text-center p-4">
+                        <i class="bi bi-file-earmark-text text-4xl text-sky-500"></i>
+                        <h3 class="text-lg font-semibold mt-3 mb-2">Keyword Optimization</h3>
+                        <p class="text-gray-600">AI-powered content suggestions to help your resume stand out to recruiters</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const generateBtn = document.getElementById('generateBtn');
+        const previewSection = document.getElementById('previewSection');
+        const previewContent = document.getElementById('previewContent');
+        const previewLoading = document.getElementById('previewLoading');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const editBtn = document.getElementById('editBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const templateCards = document.querySelectorAll('.template-card');
+        const photoDropZone = document.getElementById('photoDropZone');
+        const photoInput = document.getElementById('photoInput');
+        const photoPreview = document.getElementById('photoPreview');
+        const photoPlaceholder = document.getElementById('photoPlaceholder');
+        
+        // Disable generate button initially
+        generateBtn.disabled = true;
+        let editMode = false;
+        let selectedTemplate = 'modern';
+        let hasPhoto = false;
+
+        // Handle template selection
+        templateCards.forEach(card => {
+            card.addEventListener('click', () => {
+                // Remove active class from all cards
+                templateCards.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to selected card
+                card.classList.add('active');
+                
+                // Update selected template
+                selectedTemplate = card.dataset.template;
+            });
+        });
+
+        // Handle file selection
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('bg-sky-50');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('bg-sky-50');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-sky-50');
+            const files = e.dataTransfer.files;
+            handleFile(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (file) {
+                fileName.textContent = `Selected file: ${file.name}`;
+                generateBtn.disabled = false;
+                // Here you would typically upload the file to your server
+            }
+        }
+
+        // Photo upload handling
+        photoDropZone.addEventListener('click', () => photoInput.click());
+
+        photoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type.match('image.*')) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    photoPreview.src = e.target.result;
+                    photoPreview.classList.remove('hidden');
+                    photoPlaceholder.classList.add('hidden');
+                    hasPhoto = true;
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Generate new resume
+        generateBtn.addEventListener('click', () => {
+            // Show preview section immediately
+            previewLoading.classList.remove('hidden');
+            previewContent.innerHTML = '';
+            
+            // Disable button during processing
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="bi bi-hourglass-split animate-spin mr-2"></i>Processing...';
+
+            // Simulate processing delay - shorter for immediate preview
+            setTimeout(() => {
+                previewLoading.classList.add('hidden');
+                
+                // Generate resume preview based on selected template
+                generateResumePreview(selectedTemplate);
+                
+                // Show edit and download buttons
+                editBtn.classList.remove('hidden');
+                downloadBtn.classList.remove('hidden');
+                
+                // Reset generate button
+                generateBtn.innerHTML = '<i class="bi bi-magic mr-2"></i>Generate New Resume';
+                generateBtn.disabled = false;
+                
+                // Add event listeners for editable content
+                setupEditableElements();
+            }, 500); // Reduced delay for more immediate preview
+        });
+
+        function generateResumePreview(template) {
+            let content = '';
+            const photoElement = hasPhoto ? 
+                `<img src="${photoPreview.src}" alt="Profile Photo" class="w-24 h-24 rounded-full object-cover border-2 border-gray-300 mx-auto mb-2">` : 
+                `<div class="w-24 h-24 rounded-full bg-sky-100 flex items-center justify-center mx-auto mb-2"><i class="bi bi-person text-4xl text-sky-400"></i></div>`;
+            
+            if (template === 'modern') {
+                content = `
+                    <div class="text-center mb-6">
+                        ${photoElement}
+                        <h1 class="text-xl font-bold text-gray-800 editable" data-field="name">John Smith</h1>
+                        <p class="text-gray-600 editable" data-field="title">Software Developer</p>
+                        <div class="flex justify-center gap-4 text-sm mt-2">
+                            <span class="editable" data-field="email"><i class="bi bi-envelope"></i> johnsmith@email.com</span>
+                            <span class="editable" data-field="phone"><i class="bi bi-phone"></i> (555) 123-4567</span>
+                            <span class="editable" data-field="location"><i class="bi bi-geo-alt"></i> New York, NY</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h2 class="text-lg font-bold border-b border-gray-300 pb-1 mb-2 text-sky-700">Professional Summary</h2>
+                        <p class="text-sm editable" data-field="summary">Experienced software developer with 5+ years of expertise in full-stack development. Proficient in JavaScript, React, and Node.js with a proven track record of delivering high-quality applications on time and within budget.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h2 class="text-lg font-bold border-b border-gray-300 pb-1 mb-2 text-sky-700">Experience</h2>
+                        <div class="mb-3">
+                            <div class="flex justify-between">
+                                <h3 class="font-semibold editable" data-field="job1-title">Senior Developer - ABC Technologies</h3>
+                                <span class="text-sm text-gray-600 editable" data-field="job1-period">2020 - Present</span>
+                            </div>
+                            <ul class="list-disc list-inside text-sm ml-2">
+                                <li class="editable" data-field="job1-resp1">Led development of company's flagship web application</li>
+                                <li class="editable" data-field="job1-resp2">Mentored junior developers and implemented code review processes</li>
+                                <li class="editable" data-field="job1-resp3">Reduced page load times by 40% through performance optimizations</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="flex justify-between">
+                                <h3 class="font-semibold editable" data-field="job2-title">Web Developer - XYZ Corp</h3>
+                                <span class="text-sm text-gray-600 editable" data-field="job2-period">2018 - 2020</span>
+                            </div>
+                            <ul class="list-disc list-inside text-sm ml-2">
+                                <li class="editable" data-field="job2-resp1">Developed responsive web applications using React.js</li>
+                                <li class="editable" data-field="job2-resp2">Collaborated with design team to implement UI/UX improvements</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h2 class="text-lg font-bold border-b border-gray-300 pb-1 mb-2 text-sky-700">Education</h2>
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold editable" data-field="education-degree">Bachelor of Science in Computer Science</h3>
+                            <span class="text-sm text-gray-600 editable" data-field="education-year">2018</span>
+                        </div>
+                        <p class="text-sm editable" data-field="education-school">University of Technology</p>
+                    </div>
+                    
+                    <div>
+                        <h2 class="text-lg font-bold border-b border-gray-300 pb-1 mb-2 text-sky-700">Skills</h2>
+                        <div class="flex flex-wrap gap-2 editable" data-field="skills">
+                            <span class="bg-sky-100 px-2 py-1 text-xs rounded">JavaScript</span>
+                            <span class="bg-sky-100 px-2 py-1 text-xs rounded">React.js</span>
+                            <span class="bg-sky-100 px-2 py-1 text-xs rounded">Node.js</span>
+                            <span class="bg-sky-100 px-2 py-1 text-xs rounded">HTML/CSS</span>
+                            <span class="bg-sky-100 px-2 py-1 text-xs rounded">Git</span>
+                            <span class="bg-sky-100 px-2 py-1 text-xs rounded">RESTful APIs</span>
+                            <span class="bg-sky-100 px-2 py-1 text-xs rounded">MongoDB</span>
+                            <span class="bg-sky-100 px-2 py-1 text-xs rounded">SQL</span>
+                        </div>
+                    </div>
+                `;
+            } else if (template === 'classic') {
+                content = `
+                    <div class="border-b-2 border-gray-800 pb-4 mb-4 flex items-center">
+                        <div class="mr-4">
+                            ${photoElement}
+                        </div>
+                        <div class="flex-1">
+                            <h1 class="text-xl uppercase font-bold tracking-wider editable" data-field="name">JOHN SMITH</h1>
+                            <p class="editable" data-field="title">Software Developer</p>
+                            <div class="flex flex-wrap gap-4 text-sm mt-2">
+                                <span class="editable" data-field="email">johnsmith@email.com</span>
+                                <span class="editable" data-field="phone">(555) 123-4567</span>
+                                <span class="editable" data-field="location">New York, NY</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h2 class="text-lg uppercase font-bold mb-2">Professional Summary</h2>
+                        <p class="text-sm editable" data-field="summary">Experienced software developer with 5+ years of expertise in full-stack development. Proficient in JavaScript, React, and Node.js with a proven track record of delivering high-quality applications on time and within budget.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h2 class="text-lg uppercase font-bold mb-2">Experience</h2>
+                        <div class="mb-3">
+                            <div class="flex flex-col">
+                                <h3 class="font-semibold editable" data-field="job1-title">Senior Developer</h3>
+                                <div class="flex justify-between">
+                                    <span class="italic editable" data-field="job1-company">ABC Technologies</span>
+                                    <span class="text-sm editable" data-field="job1-period">2020 - Present</span>
+                                </div>
+                            </div>
+                            <ul class="list-disc list-outside text-sm ml-5 mt-1">
+                                <li class="editable" data-field="job1-resp1">Led development of company's flagship web application</li>
+                                <li class="editable" data-field="job1-resp2">Mentored junior developers and implemented code review processes</li>
+                                <li class="editable" data-field="job1-resp3">Reduced page load times by 40% through performance optimizations</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="flex flex-col">
+                                <h3 class="font-semibold editable" data-field="job2-title">Web Developer</h3>
+                                <div class="flex justify-between">
+                                    <span class="italic editable" data-field="job2-company">XYZ Corp</span>
+                                    <span class="text-sm editable" data-field="job2-period">2018 - 2020</span>
+                                </div>
+                            </div>
+                            <ul class="list-disc list-outside text-sm ml-5 mt-1">
+                                <li class="editable" data-field="job2-resp1">Developed responsive web applications using React.js</li>
+                                <li class="editable" data-field="job2-resp2">Collaborated with design team to implement UI/UX improvements</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h2 class="text-lg uppercase font-bold mb-2">Education</h2>
+                        <h3 class="font-semibold editable" data-field="education-degree">Bachelor of Science in Computer Science</h3>
+                        <div class="flex justify-between">
+                            <span class="italic editable" data-field="education-school">University of Technology</span>
+                            <span class="text-sm editable" data-field="education-year">2018</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h2 class="text-lg uppercase font-bold mb-2">Skills</h2>
+                        <p class="text-sm editable" data-field="skills">JavaScript, React.js, Node.js, HTML/CSS, Git, RESTful APIs, MongoDB, SQL</p>
+                    </div>
+                `;
+            } else if (template === 'minimal') {
+                content = `
+                    <div class="flex items-center mb-6">
+                        <div class="mr-4">
+                            ${photoElement}
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800 editable" data-field="name">John Smith</h1>
+                            <p class="text-gray-600 editable" data-field="title">Software Developer</p>
+                            <div class="text-sm mt-1">
+                                <div class="editable" data-field="contact">johnsmith@email.com | (555) 123-4567 | New York, NY</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h2 class="text-md font-bold mb-1">ABOUT</h2>
+                        <div class="h-0.5 bg-gray-200 mb-2"></div>
+                        <p class="text-sm editable" data-field="summary">Experienced software developer with 5+ years of expertise in full-stack development. Proficient in JavaScript, React, and Node.js with a proven track record of delivering high-quality applications on time and within budget.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h2 class="text-md font-bold mb-1">EXPERIENCE</h2>
+                        <div class="h-0.5 bg-gray-200 mb-2"></div>
+                        <div class="mb-3">
+                            <div class="flex justify-between">
+                                <h3 class="font-semibold text-sm editable" data-field="job1-title">Senior Developer, ABC Technologies</h3>
+                                <span class="text-sm text-gray-600 editable" data-field="job1-period">2020 - Present</span>
+                            </div>
+                            <ul class="list-disc list-inside text-sm ml-2">
+                                <li class="editable" data-field="job1-resp1">Led development of company's flagship web application</li>
+                                <li class="editable" data-field="job1-resp2">Mentored junior developers and implemented code review processes</li>
+                                <li class="editable" data-field="job1-resp3">Reduced page load times by 40% through performance optimizations</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="flex justify-between">
+                                <h3 class="font-semibold text-sm editable" data-field="job2-title">Web Developer, XYZ Corp</h3>
+                                <span class="text-sm text-gray-600 editable" data-field="job2-period">2018 - 2020</span>
+                            </div>
+                            <ul class="list-disc list-inside text-sm ml-2">
+                                <li class="editable" data-field="job2-resp1">Developed responsive web applications using React.js</li>
+                                <li class="editable" data-field="job2-resp2">Collaborated with design team to implement UI/UX improvements</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h2 class="text-md font-bold mb-1">EDUCATION</h2>
+                        <div class="h-0.5 bg-gray-200 mb-2"></div>
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold text-sm editable" data-field="education-degree">Bachelor of Science in Computer Science</h3>
+                            <span class="text-sm text-gray-600 editable" data-field="education-year">2018</span>
+                        </div>
+                        <p class="text-sm editable" data-field="education-school">University of Technology</p>
+                    </div>
+                    
+                    <div>
+                        <h2 class="text-md font-bold mb-1">SKILLS</h2>
+                        <div class="h-0.5 bg-gray-200 mb-2"></div>
+                        <div class="text-sm editable" data-field="skills">
+                            JavaScript • React.js • Node.js • HTML/CSS • Git • RESTful APIs • MongoDB • SQL
+                        </div>
+                    </div>
+                `;
+            }
+            
+            previewContent.innerHTML = content;
+        }
+
+        // Edit functionality
+        editBtn.addEventListener('click', () => {
+            if (!editMode) {
+                // Enter edit mode
+                editMode = true;
+                editBtn.innerHTML = '<i class="bi bi-x-lg mr-2"></i>Cancel Edit';
+                saveBtn.classList.remove('hidden');
+                
+                // Make elements editable
+                const editableElements = document.querySelectorAll('.editable');
+                editableElements.forEach(element => {
+                    element.contentEditable = true;
+                    element.classList.add('edit-mode');
+                });
+            } else {
+                // Exit edit mode and discard changes
+                exitEditMode();
+            }
+        });
+        
+        saveBtn.addEventListener('click', () => {
+            // Save changes (in a real app, would send to backend)
+            exitEditMode();
+            
+            // Show confirmation
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-50';
+            notification.innerHTML = 'Changes saved successfully!';
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        });
+        
+        function exitEditMode() {
+            editMode = false;
+            editBtn.innerHTML = '<i class="bi bi-pencil mr-2"></i>Edit';
+            saveBtn.classList.add('hidden');
+            
+            const editableElements = document.querySelectorAll('.editable');
+            editableElements.forEach(element => {
+                element.contentEditable = false;
+                element.classList.remove('edit-mode');
+            });
+        }
+        
+        function setupEditableElements() {
+            const editableElements = document.querySelectorAll('.editable');
+            
+            editableElements.forEach(element => {
+                element.addEventListener('focus', function() {
+                    if (this.contentEditable === 'true') {
+                        this.dataset.before = this.innerHTML;
+                    }
+                });
+                
+                element.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && this.contentEditable === 'true') {
+                        this.innerHTML = this.dataset.before || '';
+                        this.blur();
+                    }
+                });
+            });
+        }
+
+        // Download functionality
+        downloadBtn.addEventListener('click', () => {
+            // Create a mock PDF download
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,');
+            element.setAttribute('download', 'new_resume.pdf');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            
+            // Show success message
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-50';
+            notification.innerHTML = 'Your resume has been downloaded successfully!';
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
